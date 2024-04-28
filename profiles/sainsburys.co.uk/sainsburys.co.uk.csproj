@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\v2.0\packages\CefSharp.Common.116.0.150\build\CefSharp.Common.props" Condition="Exists('..\..\v2.0\packages\CefSharp.Common.116.0.150\build\CefSharp.Common.props')" />
+  <Import Project="..\..\v2.0\packages\cef.redist.x86.116.0.15\build\cef.redist.x86.props" Condition="Exists('..\..\v2.0\packages\cef.redist.x86.116.0.15\build\cef.redist.x86.props')" />
+  <Import Project="..\..\v2.0\packages\cef.redist.x64.116.0.15\build\cef.redist.x64.props" Condition="Exists('..\..\v2.0\packages\cef.redist.x64.116.0.15\build\cef.redist.x64.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{EFEA0B5C-9BD5-49EC-9CDC-2F3E5F2C1929}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>sainsburys.co.uk</RootNamespace>
+    <AssemblyName>sainsburys.co.uk</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CefSharp, Version=116.0.150.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
+      <HintPath>..\..\v2.0\packages\CefSharp.Common.116.0.150\lib\net462\CefSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="CefSharp.Core, Version=116.0.150.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
+      <HintPath>..\..\v2.0\packages\CefSharp.Common.116.0.150\lib\net462\CefSharp.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="CefSharp.WinForms, Version=116.0.150.0, Culture=neutral, PublicKeyToken=40c4b6fc221f4138, processorArchitecture=MSIL">
+      <HintPath>..\..\v2.0\packages\CefSharp.WinForms.116.0.150\lib\net462\CefSharp.WinForms.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EntityLib">
+      <HintPath>..\..\v2.0\EntityLib\bin\Debug\EntityLib.dll</HintPath>
+    </Reference>
+    <Reference Include="HtmlAgilityPack">
+      <HintPath>..\SiteParser\bin\Debug\HtmlAgilityPack.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\v2.0\Cartify\bin\Debug\profiles\sainsburys.co.uk\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Importer.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\v2.0\SiteParser\ParserFactory.csproj">
+      <Project>{fae864fe-d687-49f2-bca6-081b891749d7}</Project>
+      <Name>ParserFactory</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>Copy "$(TargetDir)$(TargetFileName)" "$(SolutionDir)Cartify\bin\Debug\profiles\sainsburys.co.uk"
+Copy "$(TargetDir)sainsburys.co.uk.pdb" "$(SolutionDir)Cartify\bin\Debug\profiles\sainsburys.co.uk"</PostBuildEvent>
+  </PropertyGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\..\v2.0\packages\cef.redist.x64.116.0.15\build\cef.redist.x64.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\v2.0\packages\cef.redist.x64.116.0.15\build\cef.redist.x64.props'))" />
+    <Error Condition="!Exists('..\..\v2.0\packages\cef.redist.x86.116.0.15\build\cef.redist.x86.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\v2.0\packages\cef.redist.x86.116.0.15\build\cef.redist.x86.props'))" />
+    <Error Condition="!Exists('..\..\v2.0\packages\CefSharp.Common.116.0.150\build\CefSharp.Common.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\v2.0\packages\CefSharp.Common.116.0.150\build\CefSharp.Common.props'))" />
+    <Error Condition="!Exists('..\..\v2.0\packages\CefSharp.Common.116.0.150\build\CefSharp.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\v2.0\packages\CefSharp.Common.116.0.150\build\CefSharp.Common.targets'))" />
+  </Target>
+  <Import Project="..\..\v2.0\packages\CefSharp.Common.116.0.150\build\CefSharp.Common.targets" Condition="Exists('..\..\v2.0\packages\CefSharp.Common.116.0.150\build\CefSharp.Common.targets')" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

@@ -1,0 +1,7 @@
+﻿1>------ Build started: Project: depodiy.ee, Configuration: Debug Any CPU ------
+1>F:\Gitlab\Dotnet\Cartify\profiles\depo-diy.ee\Importer.cs(128,20,128,24): warning CS0219: The variable 'href' is assigned but its value is never used
+1>F:\Gitlab\Dotnet\Cartify\profiles\depo-diy.ee\Importer.cs(158,30,158,32): warning CS0168: The variable 'ex' is declared but never used
+1>F:\Gitlab\Dotnet\Cartify\profiles\depo-diy.ee\Importer.cs(250,30,250,32): warning CS0168: The variable 'ex' is declared but never used
+1>F:\Gitlab\Dotnet\Cartify\profiles\depo-diy.ee\Importer.cs(27,20,27,31): warning CS0169: The field 'Importer.thisBrowser' is never used
+1>  depodiy.ee -> F:\Gitlab\Dotnet\Cartify\profiles\depo-diy.ee\bin\Debug\depodiy.ee.dll
+========== Build: 1 succeeded, 0 failed, 0 up-to-date, 0 skipped ==========
