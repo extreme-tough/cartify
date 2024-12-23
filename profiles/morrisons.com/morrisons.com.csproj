@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EFEA0B5C-9BD5-49EC-9CDC-2F3E5F2C1929}</ProjectGuid>
+    <ProjectGuid>{094F1742-D752-4F3B-93CE-642EE7D15C3E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>sainsburys.co.uk</RootNamespace>
-    <AssemblyName>sainsburys.co.uk</AssemblyName>
+    <RootNamespace>morrisons.com</RootNamespace>
+    <AssemblyName>morrisons.com</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -41,9 +41,8 @@
     <Reference Include="HtmlAgilityPack">
       <HintPath>..\SiteParser\bin\Debug\HtmlAgilityPack.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\v2.0\Cartify\bin\Debug\profiles\sainsburys.co.uk\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\..\v2.0\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -66,10 +65,13 @@
       <Name>ParserFactory</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>Copy "$(TargetDir)$(TargetFileName)" "$(SolutionDir)Cartify\bin\Debug\profiles\sainsburys.co.uk"
-Copy "$(TargetDir)sainsburys.co.uk.pdb" "$(SolutionDir)Cartify\bin\Debug\profiles\sainsburys.co.uk"</PostBuildEvent>
+    <PostBuildEvent>Copy "$(TargetDir)$(TargetFileName)" "$(SolutionDir)Cartify\bin\Debug\profiles\morrisons.com"
+Copy "$(TargetDir)morrisons.com.pdb" "$(SolutionDir)Cartify\bin\Debug\profiles\morrisons.com"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

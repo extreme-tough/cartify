@@ -91,13 +91,21 @@ namespace Aiplib
             }
         }
 
-        public string IMAGE_FOLDER
+        public string LOCAL_IMAGE_PATH
         {
             get
             {
-                return configFile.IniReadValue("profile", "IMAGE_FOLDER");
+                return configFile.IniReadValue("profile", "LOCAL_IMAGE_PATH");
             }
         }
+        public string SERVER_VERSION
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "SERVER_VERSION");
+            }
+        }
+
         public string FEED_TYPE
         {
             get
@@ -119,11 +127,11 @@ namespace Aiplib
                 return configFile.IniReadValue("profile", "SUBTRACT_STOCK");
             }
         }
-        public string LANGUAGE_ID
+        public int LANGUAGE_ID
         {
             get
             {
-                return configFile.IniReadValue("profile", "LANGUAGE_ID");
+                return int.Parse("0" + configFile.IniReadValue("profile", "LANGUAGE_ID"));
             }
         }
         public string DB_PREFIX
@@ -307,11 +315,11 @@ namespace Aiplib
                 return configFile.IniReadValue("profile", "GROUP_COLUMN");
             }
         }
-        public string WEBVIEW
+        public string DOWNLOAD_COMPONENT
         {
             get
             {
-                return configFile.IniReadValue("profile", "WEBVIEW");
+                return configFile.IniReadValue("profile", "DOWNLOAD_COMPONENT");
             }
         }
 
@@ -589,14 +597,114 @@ namespace Aiplib
             }
         }
 
-        public string TARGET_TYPE
+        public string SERVER_APPLICATION
         {
             get
             {
-                return configFile.IniReadValue("profile", "TARGET_TYPE");
+                string serverApp = configFile.IniReadValue("profile", "SERVER_APPLICATION");
+                return serverApp != "" ? serverApp : "Opencart";
+            }
+        }
+        public string SERVER_FTP_HOSTNAME
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "SERVER_FTP_HOSTNAME");
+            }
+        }
+        public string SERVER_FTP_USER
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "SERVER_FTP_USER");
+            }
+        }
+        public string SERVER_FTP_PASSWORD
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "SERVER_FTP_PASSWORD");
+            }
+        }
+        public string SERVER_FTP_PATH
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "SERVER_FTP_PATH");
+            }
+        }
+        public string SERVER_FTP_PARAM
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "SERVER_FTP_PARAM");
             }
         }
 
+        public string STORE_URL
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "STORE_URL");
+            }
+        }
+        public string SERVER_IMAGE_PATH
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "SERVER_IMAGE_PATH");
+            }
+        }
+        public string DELELE_LOCAL
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "DELELE_LOCAL");
+            }
+        }
+        public string USER_AGENT
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "USER_AGENT");
+            }
+        }
+        public string SIMULATE
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "SIMULATE");
+            }
+        }
+        public int MAX_PRODUCTS_PER_CATEGORY
+        {
+            get
+            {
+                return int.Parse("0" + configFile.IniReadValue("profile", "MAX_PRODUCTS_PER_CATEGORY"));
+            }
+        }
+        public int MAX_DOWNLOAD_TRIES
+        {
+            get
+            {
+                return int.Parse("0" + configFile.IniReadValue("profile", "MAX_DOWNLOAD_TRIES"));
+            }
+        }
+        public int COMMAND_TIMEOUT
+        {
+            get
+            {
+                return int.Parse("0" + configFile.IniReadValue("profile", "COMMAND_TIMEOUT"));
+            }
+        }
+
+        public string VERBOSE_LOG
+        {
+            get
+            {
+                return configFile.IniReadValue("profile", "VERBOSE_LOG");
+            }
+        }
         public void SaveSettings()
         {
             configFile.IniWriteValue("profile", "PASSWORD", _PASSWORD);
@@ -604,6 +712,8 @@ namespace Aiplib
             configFile.IniWriteValue("profile", "IMPORT_TO_CATEGORY", _IMPORT_TO_CATEGORY);
             configFile.IniWriteValue("profile", "_UPDATE_IN_LOOP", _UPDATE_IN_LOOP.ToString());
         }
+
+
 
     }
 }

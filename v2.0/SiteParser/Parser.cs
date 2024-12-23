@@ -29,7 +29,16 @@ namespace ParserFactory
         protected Dictionary<int,string> Titles,Descriptions;
         protected string Model;
         protected int MaxImportCount=-1;
-
+        public string CategoryPageLoadedIndicator="";
+        public string ProductPageLoadedIndicator = "";
+        public enum PageLoadedIndicatorType
+        {
+            NONE,
+            CSS_TYPE,
+            TEXT_TYPE
+        }
+        public PageLoadedIndicatorType CategoryPageLoadedIndicatorType = PageLoadedIndicatorType.NONE;
+        public PageLoadedIndicatorType ProductPageLoadIndicatorType = PageLoadedIndicatorType.NONE;
         public Parser()
         {
             CategoryURLs = new List<Category>();

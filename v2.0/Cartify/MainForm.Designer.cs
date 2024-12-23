@@ -67,7 +67,6 @@
             this.lblTitle = new System.Windows.Forms.Label();
             this.imgProduct = new System.Windows.Forms.PictureBox();
             this.label6 = new System.Windows.Forms.Label();
-            this.chromium = new CefSharp.WinForms.ChromiumWebBrowser();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.panel3.SuspendLayout();
@@ -539,16 +538,6 @@
             this.label6.Text = "Last Imported Item ";
             this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // chromium
-            // 
-            this.chromium.ActivateBrowserOnCreation = false;
-            this.chromium.Location = new System.Drawing.Point(360, 243);
-            this.chromium.Name = "chromium";
-            this.chromium.Size = new System.Drawing.Size(179, 135);
-            this.chromium.TabIndex = 5;
-            this.chromium.LoadError += new System.EventHandler<CefSharp.LoadErrorEventArgs>(this.chromium_LoadError);
-            this.chromium.LoadingStateChanged += new System.EventHandler<CefSharp.LoadingStateChangedEventArgs>(this.chromium_LoadingStateChanged);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -556,7 +545,6 @@
             this.ClientSize = new System.Drawing.Size(876, 589);
             this.Controls.Add(this.Result);
             this.Controls.Add(this.webBrowser);
-            this.Controls.Add(this.chromium);
             this.Controls.Add(this.panel3);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.panel2);
@@ -564,7 +552,7 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Cartify 6.7";
+            this.Text = "Cartify 7.0";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -621,7 +609,6 @@
         private System.Windows.Forms.Label lblTotalHistory;
         private System.Windows.Forms.Button ManageProducts;
         private System.Windows.Forms.Button cmdAbout;
-        private CefSharp.WinForms.ChromiumWebBrowser chromium;
     }
 }
 

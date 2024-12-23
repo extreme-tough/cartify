@@ -1,6 +1,4 @@
-﻿using CefSharp;
-
-namespace TestWebView2
+﻿namespace TestWebView2
 {
     partial class Form1
     {
@@ -31,7 +29,6 @@ namespace TestWebView2
         private void InitializeComponent()
         {
             this.button1 = new System.Windows.Forms.Button();
-            this.chromiumWebBrowser1 = new CefSharp.WinForms.ChromiumWebBrowser();
             this.panel1 = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
             this.label1 = new System.Windows.Forms.Label();
@@ -48,20 +45,10 @@ namespace TestWebView2
             this.button1.TabIndex = 1;
             this.button1.Text = "Test";
             this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
-            // 
-            // chromiumWebBrowser1
-            // 
-            this.chromiumWebBrowser1.ActivateBrowserOnCreation = false;
-            this.chromiumWebBrowser1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chromiumWebBrowser1.Location = new System.Drawing.Point(0, 0);
-            this.chromiumWebBrowser1.Name = "chromiumWebBrowser1";
-            this.chromiumWebBrowser1.Size = new System.Drawing.Size(1050, 415);
-            this.chromiumWebBrowser1.TabIndex = 4;
+            this.button1.Click += new System.EventHandler(this.button1_Click);            
             // 
             // panel1
             // 
-            this.panel1.Controls.Add(this.chromiumWebBrowser1);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 35);
             this.panel1.Name = "panel1";
@@ -115,7 +102,6 @@ namespace TestWebView2
         #endregion
 
         private System.Windows.Forms.Button button1;
-        private CefSharp.WinForms.ChromiumWebBrowser chromiumWebBrowser1;
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.TextBox txtURL;

@@ -18,8 +18,8 @@ namespace Cartify
         private string connStr;
         private bool isConnected;
         public string DB_PREFIX ;
-        protected string LANGUAGE_ID = ConfigurationManager.AppSettings["LANGUAGE_ID"];
-        protected int CommandTimeout = int.Parse(ConfigurationManager.AppSettings["CommandTimeout"]);
+        public int LANGUAGE_ID = 1;
+        public int CommandTimeout = 2147480;
         public string Version;
 
         /// <summary>

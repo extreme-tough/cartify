@@ -23,15 +23,21 @@ using HAP = HtmlAgilityPack;
 using ExcelLibrary.SpreadSheet;
 using ExcelLibrary.CompoundDocumentFormat;
 using Newtonsoft.Json;
-// using Com.StellmanGreene.CSVReader;
 using LumenWorks.Framework.IO.Csv;
 using Microsoft.Win32;
-using CefSharp.WinForms;
 using System.Windows.Forms;
-using CefSharp;
 using System.Runtime.CompilerServices;
 using System.Security.Policy;
 using System.Runtime.InteropServices;
+using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium;
+using OpenQA.Selenium.Support.UI;
+
+using SeleniumExtras;
+using System.Reflection.Emit;
+using OpenQA.Selenium.Firefox;
+using SeleniumExtras.WaitHelpers;
+using static ParserFactory.Parser;
 
 namespace Cartify
 
@@ -40,17 +46,14 @@ namespace Cartify
     {
         string[] categoryURLs, productURLs;
         HAP.HtmlDocument doc;
-        string chromiumResult = "";
-        bool chromiumLoading = false;
         string filename;
         
         string store_url;
         int StartPage, startItem;
         bool isStopped = false;
-        bool Resume = false,isLoading;
+        bool Resume = false;
         Parser siteParser;
         ProfileConfig config;
-        int StockMulitplier;
         public string DIR_IMAGE, img_path, oc_version, lastCategoryPath ,subFolder;
         public bool IsAuto = false;
         public string DebugLog;
@@ -81,33 +84,21 @@ namespace Cartify
         string[] Languages;
         int TotalImportsNow = 0,TotalImportsDB=0,TotalImports=0;
         string SelectedCategories="";
+        ChromeOptions browserOptions = new ChromeOptions();
+        ChromeDriver driver;
+        WebDriverWait wait;
+        ChromeDriverService service;
         public Form1()
         {
             InitializeComponent();            
             doc = new HAP.HtmlDocument();
-            filename = System.IO.Path.GetTempFileName();
-            img_path = ConfigurationManager.AppSettings["IMAGE_PATH"];
-            oc_version = ConfigurationManager.AppSettings["OC_VERSION"];
-            verbose = ConfigurationManager.AppSettings["Verbose_Log"];
+            
+            // Initialize variables                      
             additionalItems = new List<string>();
-            if (ConfigurationManager.AppSettings["Simulate"] == "1")
-                simulate = true;
-            max_pro_category = int.Parse( ConfigurationManager.AppSettings["MaxProductPerCategory"]);
-        }
-
-        private void importType_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            //if (!isLoading)
-              //  ShowOptions();
-            if (importType.SelectedIndex == 3)
-            {
-                FeedFileName = Functions.GetRegValue(selectedProfileText, "feedfile");
-                lblFeedFile.Text = FeedFileName;
-            }
-            else
-            {
-                lblFeedFile.Text = "(None)";
-            }
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+            string version = fvi.FileVersion;
+            this.Text = "Cartify " + version;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -115,21 +106,17 @@ namespace Cartify
             //HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BROWSER_EMULATION
             //270f
             string filename;
-            isLoading = true;
             webBrowser.ScriptErrorsSuppressed = true;
-            chromium.Dock = DockStyle.Fill;
             webBrowser.Dock = DockStyle.Fill;
             Result.Dock = DockStyle.Fill;
             Result.BringToFront();
+            
 
-            if (IsAuto && ShowForm=="1")
+
+            if (IsAuto && ShowForm == "1")
                 this.Show();
-            //Forms.MessageBox.Show("Trying to open db");
-            
-            //Forms.MessageBox.Show("Open success");
-            
-            LoadProfiles();            
-            isLoading = false;
+
+            LoadProfiles();
             if (IsAuto)
             {
                 cboProfiles.SelectedIndex = int.Parse(AutoProfile);
@@ -153,9 +140,81 @@ namespace Cartify
                 cboProfiles.SelectedIndex = int.Parse(a);
             }
 
-            
+
         }
 
+        private void cboProfiles_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            selectedProfileText = cboProfiles.Text.Split(new string[] { " - " }, StringSplitOptions.None)[0];
+            selectedProfileFolder = Forms.Application.StartupPath + @"\profiles\" + selectedProfileText + @"\";
+
+            DebugLog = Path.Combine(selectedProfileFolder, "debug.log");
+
+            selectedProfileAssembly = selectedProfileFolder + selectedProfileText + ".dll";
+            selectedProfileConfig = selectedProfileFolder + selectedProfileText + ".ini";
+            DIR_IMAGE = selectedProfileFolder + @"images/";
+
+            if (File.Exists(selectedProfileFolder + "cat_urllist.data"))
+            {
+                categoryURLs = File.ReadAllLines(selectedProfileFolder + "cat_urllist.data");
+            }
+            if (File.Exists(selectedProfileFolder + "prod_urllist.data"))
+            {
+                productURLs = File.ReadAllLines(selectedProfileFolder + "prod_urllist.data");
+            }
+            config = new ProfileConfig(selectedProfileConfig);
+            img_path = config.SERVER_IMAGE_PATH;
+            oc_version = config.SERVER_VERSION;
+            if (config.SIMULATE == "1")
+                simulate = true;
+            max_pro_category = config.MAX_PRODUCTS_PER_CATEGORY;
+
+            if (config.SERVER_APPLICATION == "Opencart")
+                targetDB = new Opencart();
+            if (config.SERVER_APPLICATION == "UltimateGroceryApp")
+                targetDB = new CustomAppContactless();
+            targetDB.LANGUAGE_ID = config.LANGUAGE_ID;
+            targetDB.CommandTimeout = config.COMMAND_TIMEOUT;
+            
+            verbose = config.VERBOSE_LOG;
+
+            switch (config.DEFAULT_IMPORT_TYPE)
+            {
+                case "Site":
+                    importType.SelectedIndex = 0;
+                    break;
+                case "Category":
+                    importType.SelectedIndex = 1;
+                    break;
+                case "Product":
+                    importType.SelectedIndex = 2;
+                    break;
+                case "Feed":
+                    importType.SelectedIndex = 3;
+                    break;
+                default:
+                    importType.SelectedIndex = 0;
+                    break;
+            }
+            importType_SelectedIndexChanged(sender, e);
+        }
+
+        private void importType_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            //if (!isLoading)
+              //  ShowOptions();
+            if (importType.SelectedIndex == 3)
+            {
+                FeedFileName = Functions.GetRegValue(selectedProfileText, "feedfile");
+                lblFeedFile.Text = FeedFileName;
+            }
+            else
+            {
+                lblFeedFile.Text = "(None)";
+            }
+        }
+
+        
         private void ShowOptions()
         {
             string subkey = "Cartify";
@@ -290,9 +349,9 @@ namespace Cartify
             List<string> targetTypes = new List<string>();
 
             targetTypes.Add("Opencart");
-            targetTypes.Add("CustomAppContactless");
+            targetTypes.Add("UltimateGroceryApp");
 
-            if (! targetTypes.Contains( config.TARGET_TYPE ))
+            if (! targetTypes.Contains( config.SERVER_APPLICATION))
             {
                 Forms.MessageBox.Show("Unknown target type. Please check your configuration file", "Error", Forms.MessageBoxButtons.OK, Forms.MessageBoxIcon.Error);
                 return;
@@ -305,7 +364,7 @@ namespace Cartify
             targetDB.DB_PREFIX = config.DB_PREFIX;
 
             
-            store_url = ConfigurationManager.AppSettings["STORE_URL"];
+            store_url = config.STORE_URL;
             DataRow adminUser = targetDB.getAdminUser();
             string URI = "https://infiware.com/cartify.php";
 
@@ -850,9 +909,9 @@ namespace Cartify
                                 uri = new Uri(option_image);
                                 string option_image_file = product_option["option_image_name"].ToString(); ;
                                 subFolder="";
-                                if (config.IMAGE_FOLDER != "")
+                                if (config.LOCAL_IMAGE_PATH != "")
                                 {
-                                    subFolder = config.IMAGE_FOLDER.Replace("%%CATEGORY_PATH%%", lastCategoryPath) + "/";
+                                    subFolder = config.LOCAL_IMAGE_PATH.Replace("%%CATEGORY_PATH%%", lastCategoryPath) + "/";
                                 }
                                 saveImageFromURL(option_image, DIR_IMAGE + subFolder + option_image_file);
                                 product_option["option_image_name"] = img_path + subFolder + option_image_file;
@@ -1193,7 +1252,7 @@ namespace Cartify
                 
                 try
                 {
-                    filename = DownloadFile(catPageURL);
+                    filename = DownloadFile(catPageURL,siteParser.CategoryPageLoadedIndicatorType,siteParser.CategoryPageLoadedIndicator);
                 }
                 catch (WebException ex)
                 {
@@ -1306,7 +1365,7 @@ namespace Cartify
                     {
 
                         if (verbose == "true") Log("Downloading product page");
-                        filename = DownloadFile(itemLink);
+                        filename = DownloadFile(itemLink,siteParser.ProductPageLoadIndicatorType,siteParser.ProductPageLoadedIndicator);
                         Log("Done");
                         
                     }
@@ -1318,6 +1377,11 @@ namespace Cartify
                             return;
                         }
                         if (ex.Message.Contains("500"))
+                        {
+                            Debug("ERROR: " + ex.Message);
+                            return;
+                        }
+                        if (ex.Message.Contains("Timeout"))
                         {
                             Debug("ERROR: " + ex.Message);
                             return;
@@ -1365,6 +1429,11 @@ namespace Cartify
             
 
             int i = 0;
+            if (Titles.Count==0)
+            {
+                Debug("ERROR: Skipping due to empty title");
+                return;
+            }
             foreach (int key in new Dictionary<int, string>(Titles).Keys) {
                 Titles[key] = System.Web.HttpUtility.HtmlDecode(Titles[key]);
                 if (config.SKIP_EMPTY_TITLE && (Titles[key] == "" || Titles[key] == null))
@@ -1677,9 +1746,9 @@ namespace Cartify
                         {
                             string option_image_file = product_option["option_image_name"].ToString(); ;
                             subFolder = "";
-                            if (config.IMAGE_FOLDER != "")
+                            if (config.LOCAL_IMAGE_PATH != "")
                             {
-                                subFolder = config.IMAGE_FOLDER.Replace("%%CATEGORY_PATH%%", lastCategoryPath) + "/";
+                                subFolder = config.LOCAL_IMAGE_PATH.Replace("%%CATEGORY_PATH%%", lastCategoryPath) + "/";
                             }
                             saveImageFromURL(option_image, DIR_IMAGE + subFolder + option_image_file);
                             product_option["option_image_name"] = img_path + subFolder + option_image_file;
@@ -1765,9 +1834,9 @@ namespace Cartify
                     {
                         if (config.DOWNLOAD_ENABLED) {
                             subFolder = "";
-                            if (config.IMAGE_FOLDER != "")
+                            if (config.LOCAL_IMAGE_PATH != "")
                             {
-                                subFolder = config.IMAGE_FOLDER.Replace("%%CATEGORY_PATH%%", lastCategoryPath) + "/";
+                                subFolder = config.LOCAL_IMAGE_PATH.Replace("%%CATEGORY_PATH%%", lastCategoryPath) + "/";
                             }
                             if (dr["isdata"].ToString() == "False")
                                 if (!saveImageFromURL(dr["url"].ToString(), DIR_IMAGE + "/" + subFolder + imageFileName))
@@ -2061,14 +2130,14 @@ namespace Cartify
 	        WebClient webClient = new WebClient();
             if (config.SEND_HEADERS)
             {
-                string UserAgent = ConfigurationManager.AppSettings["UserAgent"];
+                string UserAgent = config.USER_AGENT;
                 webClient.Headers.Add("User-Agent", UserAgent);
                 string site = config.HOST;
                 //webClient.Headers.Add("Host", site);
                 //webClient.Headers.Add("Accept", "Accept:image/png,image/;q=0.8,/*;q=0.5");
             }
             int i = 0;
-            int MaxTries = int.Parse(  ConfigurationManager.AppSettings["MaxDownloadTries"]);
+            int MaxTries = config.MAX_DOWNLOAD_TRIES;
             if (!Directory.Exists(fullpath)) {
                 Directory.CreateDirectory(Path.GetDirectoryName(fullpath));
             }
@@ -2097,6 +2166,10 @@ namespace Cartify
             if (process!=null && (!process.HasExited))
                 process.Kill();
             targetDB.Disconnect();
+            if (driver != null)
+            {
+                driver.Quit();
+            }
         }
 
         private void downloadImages_Click(object sender, EventArgs e)
@@ -2123,8 +2196,6 @@ namespace Cartify
 
         private void LoadProfiles()
         {
-            string configFile;
-            IniFile ProfileConfigFile;
             string profileName;
             string[] profiles = Directory.GetDirectories(Forms.Application.StartupPath + @"\profiles\");
             foreach (string profile in profiles)
@@ -2141,53 +2212,7 @@ namespace Cartify
             }
         }
 
-        private void cboProfiles_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            selectedProfileText = cboProfiles.Text.Split(new string[] { " - " }, StringSplitOptions.None)[0];
-            selectedProfileFolder = Forms.Application.StartupPath + @"\profiles\" + selectedProfileText + @"\";
-
-            DebugLog = Path.Combine(selectedProfileFolder, "debug.log");
-
-            selectedProfileAssembly = selectedProfileFolder + selectedProfileText + ".dll";
-            selectedProfileConfig = selectedProfileFolder + selectedProfileText + ".ini";
-            DIR_IMAGE = selectedProfileFolder + @"images/";
-
-            if (File.Exists(selectedProfileFolder + "cat_urllist.data"))
-            {
-                categoryURLs = File.ReadAllLines(selectedProfileFolder + "cat_urllist.data");
-            }
-            if (File.Exists(selectedProfileFolder + "prod_urllist.data"))
-            {
-                productURLs = File.ReadAllLines(selectedProfileFolder + "prod_urllist.data");
-            }
-            config = new ProfileConfig(selectedProfileConfig);
-
-            if (config.TARGET_TYPE=="Opencart")
-                targetDB= new Opencart();
-            if (config.TARGET_TYPE == "CustomAppContactless")
-                targetDB = new CustomAppContactless();
-
-            switch (config.DEFAULT_IMPORT_TYPE)
-            {
-                case "Site" :
-                    importType.SelectedIndex = 0;
-                    break;
-                case "Category":
-                    importType.SelectedIndex = 1;
-                    break;
-                case "Product":
-                    importType.SelectedIndex = 2;
-                    break;
-                case "Feed":
-                    importType.SelectedIndex = 3;
-                    break;
-                default:
-                    importType.SelectedIndex = 0;
-                    break;
-            }
-            importType_SelectedIndexChanged(sender, e);
-        }
-
+        
         private string getMappedCategory(string sourceCategory)
         {
             
@@ -2249,7 +2274,7 @@ namespace Cartify
 
         private void ManageProducts_Click(object sender, EventArgs e)
         {
-            frmProductView frmManageProducts = new frmProductView();
+            frmProductView frmManageProducts = new frmProductView(config.SERVER_VERSION);
             frmManageProducts.selectedProfileText = selectedProfileText;
             frmManageProducts.connectionString = config.CONNECTION_STRING;
             frmManageProducts.ShowDialog();
@@ -2370,12 +2395,12 @@ namespace Cartify
 
         private void UploadButton_Click(object sender, EventArgs e)
         {
-            string FTP_USER = ConfigurationManager.AppSettings["FTP_USER"];
-            string FTP_PASSWORD = ConfigurationManager.AppSettings["FTP_PASSWORD"];
-            string FTP_HOST = ConfigurationManager.AppSettings["FTP_HOST"];
-            string FTP_PATH = ConfigurationManager.AppSettings["FTP_PATH"];
-            string FTP_PARAM = ConfigurationManager.AppSettings["FTP_PARAM"];
-            string FTP_DELETELOCAL = ConfigurationManager.AppSettings["FTP_DELETELOCAL"];
+            string FTP_USER = config.SERVER_FTP_USER;
+            string FTP_PASSWORD = config.SERVER_FTP_PASSWORD;
+            string SERVER_FTP_HOSTNAME = config.SERVER_FTP_HOSTNAME;
+            string FTP_PATH = config.SERVER_FTP_PATH;
+            string FTP_PARAM = config.SERVER_FTP_PARAM;
+            string FTP_DELETELOCAL = config.DELELE_LOCAL;
             string localImageFolder = selectedProfileFolder + @"images";
             string localImageFiles = localImageFolder + @"\*.*";
             Result.Clear();           
@@ -2391,9 +2416,10 @@ namespace Cartify
 
             watcher.EnableRaisingEvents = true;
             ProcessStartInfo processInfo = new ProcessStartInfo();
-            processInfo.Arguments = "-u " + FTP_USER + " -p " + FTP_PASSWORD + " -R " + (FTP_DELETELOCAL=="1"?" -DD  ":"") + FTP_PARAM + " " + FTP_HOST + " \"" + FTP_PATH + "\"  \"" + localImageFiles + "\"";
-            Log("Command : ncftpput.exe " + processInfo.Arguments);
-            processInfo.FileName="ncftpput.exe";
+            // Run using CMD instead of EXE to avoid the exception: "The operation was canceled by the user" on the first launch" on some cases
+            processInfo.Arguments = "/K ncftpput.exe -u " + FTP_USER + " -p " + FTP_PASSWORD + " -R " + (FTP_DELETELOCAL=="1"?" -DD  ":"") + FTP_PARAM + " " + SERVER_FTP_HOSTNAME + " \"" + FTP_PATH + "\"  \"" + localImageFiles + "\"";            
+            Log("Command : cmd.exe " + processInfo.Arguments);
+            processInfo.FileName="cmd.exe";
             //processInfo.WindowStyle = ProcessWindowStyle.Normal;
             try {
                 process = Process.Start(processInfo);
@@ -2402,7 +2428,7 @@ namespace Cartify
             {
                 process = Process.Start(processInfo);
             }
-            //var process = Process.Start("ncftpput.exe","-u " + FTP_USER + " -p " + FTP_PASSWORD + " -R -DD  " + FTP_HOST + " \"" + FTP_PATH + "\"  \"" + localImageFiles + "\"");
+            //var process = Process.Start("ncftpput.exe","-u " + FTP_USER + " -p " + FTP_PASSWORD + " -R -DD  " + SERVER_FTP_HOSTNAME + " \"" + FTP_PATH + "\"  \"" + localImageFiles + "\"");
             while (process.HasExited)
                 Forms.Application.DoEvents();
         }
@@ -2411,14 +2437,7 @@ namespace Cartify
         {
             if (butView.Text=="View Browser")
             {
-                if (config.WEBVIEW == "CHROMIUM")
-                {
-                    chromium.BringToFront();
-                }
-                else
-                {
-                    webBrowser.BringToFront();
-                }
+                webBrowser.BringToFront();
                 butView.Text = "View Log";
             }
             else
@@ -2436,10 +2455,10 @@ namespace Cartify
             return filename;
         }
 
-        private string DownloadFile(string url)
+        private string DownloadFile(string url, PageLoadedIndicatorType indicatorType = PageLoadedIndicatorType.NONE, string pageLoadedIndicator="")
         {
             int elapsed = 0, timeeout = 60;
-            if (config.WEBVIEW == "IE")
+            if (config.DOWNLOAD_COMPONENT == "IE")
             {
                 webBrowser.Navigate(url);
                 while (webBrowser.ReadyState != Forms.WebBrowserReadyState.Complete)
@@ -2455,19 +2474,7 @@ namespace Cartify
                 filename = Path.GetTempFileName();
                 File.WriteAllText(filename, webBrowser.DocumentText);
             }
-            else if (config.WEBVIEW == "CHROMIUM")
-            {
-                Debug("Navigating URL " +  url);
-                chromiumLoading = true;
-                chromium.LoadUrlAsync(url);
-                while (chromiumLoading)
-                {
-                    Application.DoEvents();
-                }
-                Debug("HTML received for " + url);
-                filename = SaveString(chromiumResult);
-            }
-            else if (config.WEBVIEW == "HTTPCLIENT")
+            else if (config.DOWNLOAD_COMPONENT == "HTTPCLIENT")
             {
                 WebClient client;
 
@@ -2482,9 +2489,8 @@ namespace Cartify
                     host = linkToUse.Host;
                 }
                 else
-
-                client.Headers.Add("Host", host);
-                client.Headers.Add("User-Agent", ConfigurationManager.AppSettings["UserAgent"]);
+                    client.Headers.Add("Host", host);
+                client.Headers.Add("User-Agent", config.USER_AGENT);
                 //client.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
                 client.Headers.Add("Accept", "*/*");
                 client.Headers.Add("Cache-Control", "no-cache");
@@ -2492,52 +2498,40 @@ namespace Cartify
                 filename = System.IO.Path.GetTempFileName();
                 client.DownloadFile(url, filename);
             }
-            return filename;
-        }
-
-        private void chromium_LoadError(object sender, LoadErrorEventArgs e)
-        {
-            Debug("ERROR:  Message " + e.ErrorText + " in " + chromium.Address);
-            if (e.ErrorCode != CefErrorCode.Aborted)
-                Debug("ERROR: On " + chromium.Address);
-            chromiumLoading = false;
-        }
-
-        private void chromium_LoadingStateChanged(object sender, LoadingStateChangedEventArgs e)
-        {
-            if (!chromiumLoading) return;
-            if (!e.IsLoading)
+            else if (config.DOWNLOAD_COMPONENT == "SELENIUM")
             {
-                Debug("Navigated to : " + chromium.Address);
-                string javascriptCode = "document.documentElement.outerHTML";
-                chromium.EvaluateScriptAsync(javascriptCode).ContinueWith(task =>
+                // browserOptions.AddArguments("--headless");
+                if (service == null)
                 {
-                    if (task.Exception == null)
-                    {
-                        var response = task.Result;
-                        if (response.Result != null)
-                        {
-                            string html = response.Result.ToString();
-                            chromiumResult = html;
-                            Debug("Output generated " + chromium.Address);                            
-                        }
-                        else
-                        {
-                            Debug("ERROR: Output failed " + chromium.Address);
-                            chromiumResult = "";
-                        }
-                        chromiumLoading = false;
-                    }
-                    else
-                    {
-                        chromiumLoading = false;
-                        Debug("ERROR: Exception thrown on evaluating script");
-                        throw task.Exception;
+                    service = ChromeDriverService.CreateDefaultService();
+                    service.HideCommandPromptWindow = true;
+                    driver = new ChromeDriver(service, browserOptions);
+                    driver.Manage().Window.Maximize();
+                }
 
+                driver.Navigate().GoToUrl(url);
+
+                if (pageLoadedIndicator != "")
+                {
+                    wait = new WebDriverWait(driver, TimeSpan.FromSeconds(30));
+                    if (indicatorType == PageLoadedIndicatorType.CSS_TYPE)
+                    {
+                        try
+                        {
+                            wait.Until(SeleniumExtras.WaitHelpers.ExpectedConditions.ElementExists(By.CssSelector(pageLoadedIndicator)));
+                        } catch (WebDriverTimeoutException ex)
+                        {
+                            throw new WebException("Timeout");
+                        }
+                    } else if (indicatorType == PageLoadedIndicatorType.TEXT_TYPE)
+                    {
+                        wait.Until(d => d.PageSource.Contains(pageLoadedIndicator));
                     }
-                });
-                
+                }
+                filename = System.IO.Path.GetTempFileName();
+                File.WriteAllText(filename, driver.PageSource);
             }
+            return filename;
         }
 
         private void buttonStop_Click(object sender, EventArgs e)

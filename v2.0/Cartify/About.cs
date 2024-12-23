@@ -17,6 +17,11 @@ namespace Cartify
         public About()
         {
             InitializeComponent();
+            System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
+            string version = fvi.FileVersion;
+            lblVersion.Text = version;
+
         }
 
         private void lblLink_Click(object sender, EventArgs e)

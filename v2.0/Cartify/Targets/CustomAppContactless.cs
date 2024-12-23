@@ -138,14 +138,14 @@ namespace Cartify
             string catjson = "";
             string category_id, sub_category_id, child_sub_category_id;
 
-            category_id = data["categories"].Count >= 1 ? data["categories"][0].ToString() : "";
+            category_id = data["categories"].Count >= 1 ? data["categories"][0].ToString() : "0";
 
             if (data["categories"].Count >= 2)
                 category_id  = sub_category_id = data["categories"][1].ToString();
             else
-                sub_category_id = "";
+                sub_category_id = "0";
 
-            child_sub_category_id = data["categories"].Count >= 3 ? data["categories"][2].ToString() : "";
+            child_sub_category_id = data["categories"].Count >= 3 ? data["categories"][2].ToString() : "0";
 
 
             switch (data["categories"].Count)
@@ -170,7 +170,7 @@ namespace Cartify
                 + "', category_id = '" + category_id
                 + "', sub_category_id = '" + sub_category_id
                 + "', child_sub_category_id = '" + child_sub_category_id
-                + "', price = '" + data["price"]
+                + "', price = '" + data["price"] 
                 + "', image = '" + data["image"].Replace("'", "''")
                 + "', images = '[]',choice_options= '[]',attributes = '[]',add_ons = '[]',variations = '[]"
                 + "', available_time_starts = '00:00:00',available_time_ends = '23:00:00"
@@ -197,14 +197,14 @@ namespace Cartify
             string catjson = "";
             string category_id, sub_category_id, child_sub_category_id;
 
-            category_id = data["categories"].Count >= 1 ? data["categories"][0].ToString() : "";
+            category_id = data["categories"].Count >= 1 ? data["categories"][0].ToString() : "0";
 
             if (data["categories"].Count >= 2)
                 category_id = sub_category_id = data["categories"][1].ToString();
             else
-                sub_category_id = "";
+                sub_category_id = "0";
 
-            child_sub_category_id = data["categories"].Count >= 3 ? data["categories"][2].ToString() : "";
+            child_sub_category_id = data["categories"].Count >= 3 ? data["categories"][2].ToString() : "0";
 
 
             switch (data["categories"].Count)
@@ -576,6 +576,7 @@ namespace Cartify
             string sql = "SELECT id as attribute_id, 0 as attribute_group_id, '1' as language_id,name " + DB_PREFIX + " FROM `attributes`";
             return GetTable(sql);
         }
+
         public override int addCategory(int parentId, int top, string keyword, Dictionary<string, Dictionary<string, string>> name_array, string fullPath = "")
         {
             string name;
@@ -605,5 +606,11 @@ namespace Cartify
             }
             return lastKey;
         }
+
+        //write a function to encrypt string    
+
+
     }
+
+    
 }

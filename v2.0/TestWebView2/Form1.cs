@@ -1,6 +1,4 @@
-﻿using CefSharp;
-using CefSharp.WinForms;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -24,15 +22,7 @@ namespace TestWebView2
 
         private async void button1_Click(object sender, EventArgs e)
         {
-            // "https://www.tesco.com/groceries/en-GB/products/313514046"
-            string url = txtURL.Text;
-            chromiumWebBrowser1.LoadUrlAsync(url).ContinueWith(x =>
-            {
-                if (x.IsCompleted)
-                {
-                    pageLoaded = true;
-                }
-            });
+
         }
     }
 }

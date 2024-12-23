@@ -10,8 +10,10 @@ using System.Configuration;
 using System;
 using System.Security.Cryptography;
 using System.Windows.Forms.VisualStyles;
+using System.Linq;
+using System.IO;
 
-namespace sainsburys.co.uk
+namespace asda.com
 {
     public class Importer : Parser
     {
@@ -31,16 +33,16 @@ namespace sainsburys.co.uk
         dynamic itemObj;
         public Importer()
         {
-            CategoryPageLoadedIndicator = ".pt__link";
+            
+            CategoryPageLoadedIndicator = ".co-product-list__main-cntr";
             CategoryPageLoadedIndicatorType = PageLoadedIndicatorType.CSS_TYPE;
-            ProductPageLoadedIndicator = ".pd__header";
-            ProductPageLoadIndicatorType = PageLoadedIndicatorType.CSS_TYPE;
+            ProductPageLoadedIndicator = ".asda-image-zoom__zoomed-image-placeholder";
+            ProductPageLoadIndicatorType = PageLoadedIndicatorType.CSS_TYPE;            
         }
 
         public override string buildCategoryURL(string catURL, int page)
         {
-            string[] urlParts = catURL.Split(new string[] { "#" }, StringSplitOptions.None);            
-            string newURL = urlParts[0] + "/opt/page:" + page.ToString();
+            string newURL = catURL + "?page=" + page.ToString();
             return newURL;
         }
 
@@ -51,14 +53,14 @@ namespace sainsburys.co.uk
             List<string> urls = new List<string>();
             string TopCat = currentCat;
 
-            HAP.HtmlNodeCollection nodes = Document.SelectNodes("//a[@class='pt__link']");
-
+            HAP.HtmlNode node = Document.SelectSingleNode("//ul[contains(@class,'co-product-list__main-cntr')]"); ;
+            HAP.HtmlNodeCollection nodes = node.SelectNodes(".//a[@class='co-product__anchor']");
             int i = 0;
-            if (nodes != null)
+            if (node != null)
             {
                 foreach (HAP.HtmlNode item in nodes)
                 {
-                    urls.Add(item.GetAttributeValue("href", "").Replace("&amp;", "&"));
+                    urls.Add("https://groceries.asda.com" + item.GetAttributeValue("href", "").Replace("&amp;", "&"));
                     i++;
                 }
             }
@@ -83,9 +85,10 @@ namespace sainsburys.co.uk
             {
                 HAP.HtmlNode titleNode = Document.SelectSingleNode("//h1");
                 Titles.Clear();
+                if (titleNode == null) 
+                    return Titles;
                 foreach (string language in Languages)
                 {
-                    Model = ConvertToUniqueEncryptedString(titleNode.InnerText);
                     Titles.Add(int.Parse(language), titleNode.InnerText);
                 }
             } catch (Exception ex)
@@ -96,35 +99,11 @@ namespace sainsburys.co.uk
             return Titles;
         }
 
-        static string ConvertToUniqueEncryptedString(string input)
-        {
-            // Step 1: Hash the input string using SHA256
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
-
-                // Step 2: Convert the hash to a Base64 string
-                string base64String = Convert.ToBase64String(hashBytes);
-
-                // Step 3: Ensure the string is 15 characters long
-                // Base64 strings can contain + and / characters, which can be URL-encoded
-                // To make it URL-safe, you can replace + with - and / with _
-                base64String = base64String.Replace('+', '-').Replace('/', '_');
-
-                // Ensure the output is exactly 15 characters long
-                // If the base64 string is shorter, pad with zeros; if longer, truncate
-                if (base64String.Length > 15)
-                {
-                    return base64String.Substring(0, 15);
-                }
-                else
-                {
-                    return base64String.PadRight(15, '0');
-                }
-            }
-        }
+        
         public override string getModel()
         {
+            HAP.HtmlNode modelNode = Document.SelectSingleNode("//span[@class='pdp-main-details__product-code']");
+            Model = modelNode.InnerText.Replace("Product code:", "").Trim();
             return Model;
         }
 
@@ -136,14 +115,18 @@ namespace sainsburys.co.uk
         public override string getPrice()
         {
 
-            HAP.HtmlNode priceNode =  Document.SelectSingleNode("//span[contains(@class,'pd__cost__retail-price')]");
             string price;
+
+            var priceNode = Document.SelectSingleNode("//strong[contains(@class, 'pdp-main-details__price')]");
+            var priceText = priceNode?.InnerText.Trim();
+            price = priceText?.Split(' ').LastOrDefault();
+
             if (priceNode != null)
             {
                 if (priceNode.InnerText.EndsWith("p"))
-                    price = "0." + priceNode.InnerText.Replace("p", "");
+                    price = "0." + price.Replace("p", "");
                 else
-                    price = priceNode.InnerText.Replace("£","");
+                    price = price.Replace("£","");
                 return price;
             }
             else
@@ -165,20 +148,14 @@ namespace sainsburys.co.uk
 
         public override Dictionary<int, string> getDescriptions()
         {
-            string desc ;
+            string desc = "";
 
-            HAP.HtmlNode descNode = Document.SelectSingleNode("//htmlcontent");
+            HAP.HtmlNodeCollection  descNodes = Document.SelectNodes("//div[@class='pdp-description-reviews__product-details-cntr']");
+            foreach (var descNode in descNodes)
+            {
+                desc += descNode.OuterHtml;
+            }
             
-            if (descNode==null)
-                descNode = Document.SelectSingleNode("//div[@id='mainPart']");
-            if (descNode == null)
-                descNode = Document.SelectSingleNode("//div[@id='tabpanel-product-details']");
-            if (descNode == null)
-                descNode = Document.SelectSingleNode("//details");
-            if (descNode == null)
-                desc = "";
-            else
-               desc = descNode.InnerHtml;
 
             Descriptions.Clear();
             foreach (string language in Languages)
@@ -188,26 +165,46 @@ namespace sainsburys.co.uk
             return Descriptions;
         }
 
+        string[] validExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp", ".svg" };
+
+        static bool IsValidImageFile(string filePath, string[] validExtensions)
+        {
+            string fileExtension = Path.GetExtension(filePath).ToLower();
+
+            foreach (string ext in validExtensions)
+            {
+                if (fileExtension == ext)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         public override ImageTable getImages()
         {
             string src; Uri uri;
             DataRow dr;
             int i = 0;
-            HAP.HtmlNode imageNode = Document.SelectSingleNode("//img[contains(@class,'pd__image__nocursor')]");
-            if (imageNode==null)
-                imageNode = Document.SelectSingleNode("//img[contains(@class,'pd__image')]");
-            string imgSrc = imageNode.GetAttributeValue("srcset","");
-            if ((imgSrc != null) && (!imgSrc.StartsWith("data:image"))) {
-                string[] imgParts = imgSrc.Split(new string[] { "," }, StringSplitOptions.None);
-                imgSrc = imgParts[imgParts.Length-1].Trim();
-                imgParts = imgSrc.Split(new string[] { " " }, StringSplitOptions.None);
-                imgSrc = imgParts[0];
-                uri = new Uri(imgSrc);
-                dr = prodImages.NewRow();
-                dr["url"] = imgSrc;
-                dr["image_name"] = Model + "_" + i.ToString() + System.IO.Path.GetExtension(uri.LocalPath);
-                prodImages.Rows.Add(dr);
+            HAP.HtmlNodeCollection imageNodes = Document.SelectNodes("//img[contains(@class,'asda-image-zoom__zoomed-image-placeholder')]");
+            foreach (var item in imageNodes)
+            {
+                string imgSrc = item.GetAttributeValue("src", "");
+                if ((imgSrc != null) && (!imgSrc.StartsWith("data:image")))
+                {
+                    uri = new Uri(imgSrc);
+                    dr = prodImages.NewRow();
+                    dr["url"] = imgSrc;
+                    var localPath = uri.LocalPath;
+
+                    if (!IsValidImageFile(uri.LocalPath, validExtensions))
+                        localPath = uri.LocalPath + ".jpg";
+
+                    dr["image_name"] = Model + "_" + i.ToString() + System.IO.Path.GetExtension(localPath);
+                    prodImages.Rows.Add(dr);
+                }
+
             }
 
 
@@ -221,13 +218,13 @@ namespace sainsburys.co.uk
         public override CategoryTable getCategoryPath()
         {
             catPath = "";
-            HAP.HtmlNodeCollection catNodes = Document.SelectNodes("//ol[contains(@class,'pd__breadcrumbs')]/li");
+            HAP.HtmlNodeCollection catNodes = Document.SelectNodes("//a[contains(@class,'breadcrumb__link')]");
             CategoryTable categoryPathTable = new CategoryTable();
             if (catNodes != null)
             {
                 foreach (HAP.HtmlNode catNode in catNodes)
                 {
-                    catPath = catPath + System.Web.HttpUtility.HtmlDecode(catNode.InnerText.Trim()) + "///";
+                    catPath = catPath + System.Web.HttpUtility.HtmlDecode(catNode.SelectSingleNode("./div").NextSibling.InnerText.Trim()) + "///";
                 }
 
 
@@ -263,23 +260,6 @@ namespace sainsburys.co.uk
         private OptionTable ScrapOptions()
         {
             OptionTable dtOption = new OptionTable();
-
-            string optionName, optionValue;
-            DataRow dr;
-
-            if (itemObj.products[0].catchweight == null)
-                return null;
-            foreach (dynamic catchweight in itemObj.products[0].catchweight)
-            {
-                dr = dtOption.NewRow();
-                dr["option_name"] = "Weight";
-                dr["required"] = 1;
-                dr["option_value"] = catchweight.range;
-                dr["price"] = catchweight.retail_price.price.Value.ToString(); ;
-                dr["quantity"] = "99";
-                dtOption.Rows.Add(dr);
-            }
-
 
             return dtOption;
         }

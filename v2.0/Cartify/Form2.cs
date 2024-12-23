@@ -16,10 +16,13 @@ namespace Cartify
     {
         public string selectedProfileText;
         public string connectionString;
+        public string oc_version;
+
         DbWrapper opencartDB;
-        public frmProductView()
+        public frmProductView(string version)
         {
             InitializeComponent();
+            oc_version = version;
         }
 
         private void frmProductView_Load(object sender, EventArgs e)
@@ -35,7 +38,6 @@ namespace Cartify
 
             
 
-            string oc_version = ConfigurationManager.AppSettings["OC_VERSION"];
             opencartDB = new Opencart();
             opencartDB.Open(connectionString);
             opencartDB.Version = oc_version;
